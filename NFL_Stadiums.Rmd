@@ -1,0 +1,182 @@
+---
+title: "NFL Team: Location, Wins and Likes"
+subtitle: Geographical Location, Superbowl Wins and Facebook likes
+author: "Rebecca Elizabeth Kitching"
+date: "August 2018"
+output:
+  prettydoc::html_pretty:
+    theme: architect
+    highlight: github
+    fontsize: 8pt
+---
+
+Date created: `r date()`
+
+Here we can visually investigate the trends and patterns in the geographical location, number of Superbown wins and Facebook Likes for each of the 32 NFL teams.Data on Facebook likes was collected by myself from each teams official Facebook site and are correct as of 22/08/18. All NFL team icons were obtained direct from NFL.com. Prior to the analysis this was entered into a local SPSS file and subsequently imported as a data frame into R.
+
+| Variable | Info | 
+|------:|:-----|
+| Team | NFL Team name |  
+| Acro | Team 2 or 3 letter acronym |  
+| Conference | Denotes whether the team are in the NFC or AFC conference |  
+| Latitude | Geographical location of Team stadium | 
+| Longitude | Geographical location of Team stadium  | 
+| SuperbowlWin | Number of Superbowl wins (correct as of August, 2018) | 
+| Fanbase | Number of 'Likes' on the teams official Facebook page | 
+
+
+Below, I'll be showing you exactly how to create such a plot with the use of basic R programming knowledge and the Leaflet package. If anyone is interested in how I changed the graphics of the R Markdown file, it was done using the **prettydoc** R package - a walk through guide can be found here (http://yixuan.cos.name/prettydoc/). The tables were also formatted using the **lemon** package, which can be set to the default table generator using `knit_print.data.frame <- lemon_print`.
+
+
+
+```{r load packages, echo=FALSE}
+library(leaflet)
+library(haven)
+library(prettydoc)
+library(magrittr)
+library(lemon)
+knit_print.data.frame <- lemon_print
+```
+
+```{r data, echo=FALSE}
+Stadium_data <- read_sav("~/Documents/GitHub/NFL_Analysis/NFL_winsandlikes.sav")
+```
+
+```{r urls, echo=FALSE}
+nflurl = c("https://static.nfl.com/static/content/public/static/wildcat/assets/img/logos/teams/")
+suffix = c(".svg")
+```
+
+```{r colour, warning=FALSE, echo=FALSE}
+Stadium_data$conferencecolour <- c("")
+Stadium_data$conferencecolour[which(Stadium_data$Conference=='AFC')] <- 'blue'
+Stadium_data$conferencecolour[which(Stadium_data$Conference=='NFC')] <- 'green'
+```
+
+## Map Trends
+1) Most popular AFC team is the New England Patriots while the most popular NFC team is the Dallas Cowboys.
+2) Least popular team is the Jacksonville Jaguars.
+3) There are two cities who have two NFL teams.  
+San Francisco has both the 49ers and the Oakland raiders. The 49ers have both more superbowl wins and more Facebook likes.
+New York also has both the Giants and the Jets. Similarly, the more popular team, the Giants, have more Facebook likes.
+4) Overall there seems to be a trend that teams with more Superbowl wins have more Facebook likes.
+5) Proportionally, the Seahalks and Bears have lots of Facebook likes given they've only won the Superbowl once.
+6) NFL teams are largely spread acorss the North East of the US.
+
+```{r Map, echo=FALSE , fig.align="center"}
+my_map <- leaflet(width = "100%") %>% addTiles() 
+
+for (i in 1:dim(Stadium_data)[1]){
+thisIcon <- makeIcon(iconUrl = paste(nflurl,Stadium_data$Acro[i],suffix, sep=""),
+                    iconWidth = (31*215/230)+(Stadium_data$SuperbownWin[i])^2.5,
+                    iconHeight = 31+(Stadium_data$SuperbownWin[i])^2.5,
+                    iconAnchorX = ((31*215/230)+(Stadium_data$SuperbownWin[i])^2.5)/2,
+                    iconAnchorY = (31+(Stadium_data$SuperbownWin[i])^2.5)/2)
+
+my_map <- addCircles(my_map, lat=Stadium_data$latitude[i], lng= Stadium_data$longitude[i],weight = 1, radius = sqrt((Stadium_data$Fanbase[i]/10)^2),popup=paste(Stadium_data$Team[i]," : Number Facebook Likes ", Stadium_data$Fanbase[i]), color = Stadium_data$conferencecolour[i])
+
+my_map <- addMarkers(my_map,lat=Stadium_data$latitude[i], lng= Stadium_data$longitude[i], popup=paste(Stadium_data$Team[i]," : Superbowl Wins ",Stadium_data$SuperbownWin[i],sep=""), icon=thisIcon)
+}
+
+my_map <- addLegend(my_map,labels = c("AFC","NFC"), colors = c("blue","green"))
+
+my_map
+```
+
+## MAP KEY
+The NFL team logo is proportional to the number of Superbowl wins with more wins having larger logos.
+The corresponding team circle is also proportional to the number of Facebook likes each team has and the colour is representative of which NFL conference the team is in.
+
+
+# Load Packages
+
+The following code requires the **leaflet** package (used to create the interctive map), the **haven** package to import the data set from an SPSS document and the **magrittr** package to allow us to use piping (%>%) in R markdown.
+
+```{r load packages noeval, eval=FALSE}
+library(leaflet) # Interative maps
+library(haven) # Import from SPSS
+library(magrittr) # Allow piping (%>%) to be used in R markdown
+```
+
+# Data set up
+
+Next we want to actually load the data set into thr R environment. As mentioned above, this will be done using the *read_sav* function from the **haven** package, as the dataset is coming from an SPSS file. We can also see the top few rows of that data set below.
+
+```{r data noeval, eval=FALSE}
+Stadium_data <- read_sav("~/Documents/GitHub/NFL_Analysis/NFL_winsandlikes.sav")
+```
+```{r table, echo=FALSE, comment=""}
+
+head(Stadium_data[1:7,],3)
+```
+  
+We also need to set up some additional variables for the icon URL. Due to the consistent URL naming system used by NFL.com, most of the URL for each teams icon are the same with a change in team acroymn. Here we set up the main part of the URL and its suffix to later insert the acroymn between them.
+  
+```{r urls noeval, eval=FALSE}
+  
+nflurl = c("https://static.nfl.com/static/content/public/static/wildcat/assets/img/logos/teams/")
+suffix = c(".svg")
+```
+
+We also eventully want to colour code our markers by NFL conference. Here we create a new coloumn for the data set and assign it blue for all AFC teams and green for all NFC teams.
+
+```{r colour noeval, warning=FALSE, eval=FALSE}
+Stadium_data$conferencecolour <- c("")
+Stadium_data$conferencecolour[which(Stadium_data$Conference=='AFC')] <- 'blue'
+Stadium_data$conferencecolour[which(Stadium_data$Conference=='NFC')] <- 'green'
+```
+
+# Making the Map
+
+Now  we come to the fun bit, making the map! This requires a bit more understanding of R coding but I'll be walking you though it in the comments below so it'll be more manageable. This code makes use of the piping notation (%>%) which allows multiple functions to be stringed together where the output from the previous function is used as the input for the next and so on.
+
+When we put a marker down for each NFL team, we want to have a different icon type which means we have to loop through all the NFL teams to insert the relevant URL each time.
+
+```{r Mapcode noeval, eval=FALSE}
+# Create a variable to contain the map information
+# Leaflet and addTiles initiates a viewer and adds the map
+my_map <- leaflet() %>% addTiles() 
+
+# Loop through 1:32 which matches the number of NFL teams
+for (i in 1:dim(Stadium_data)[1]){
+  # Makes marker image - this will be different from each loop
+  thisIcon <- makeIcon(
+                    # Paste together the URL start and suffix with the team acroymn in the middle
+                    iconUrl = paste(nflurl,Stadium_data$Acro[i],suffix, sep=""),
+                    # Icon size
+                    iconWidth = (31*215/230)+(Stadium_data$SuperbownWin[i])*8,
+                    iconHeight = 31+(Stadium_data$SuperbownWin[i])*8,
+                    # Which part of the image we want to be on the geographical location
+                    # 0,0 corresponds to top left. Here we set it to the middle of the image
+                    iconAnchorX = ((31*215/230)+(Stadium_data$SuperbownWin[i])*8)/2,
+                    iconAnchorY = (31+(Stadium_data$SuperbownWin[i])*8)/2)
+
+  # Add the Teams marker to the stadiums geographical position
+  my_map <- addMarkers(my_map,
+                       lat=Stadium_data$latitude[i], 
+                       lng= Stadium_data$longitude[i], 
+                       # Add a label to the marker for the team name and number of Superbowl wins
+                       popup=paste(Stadium_data$Team[i]," : Superbowl Wins ",Stadium_data$SuperbownWin[i],sep=""), 
+                       # Set the icon image to be the one we've just created
+                       icon=thisIcon)
+  # Add a circle second marker at the same location to show facebook fans
+  my_map <- addCircles(my_map,
+                       lat=Stadium_data$latitude[i], 
+                       lng= Stadium_data$longitude[i],
+                       # Circumference Line width outside the circle  
+                       weight = 1, 
+                       # Size of the circle determined by number of fans
+                       radius = sqrt((Stadium_data$Fanbase[i]/10)^2),
+                       # Add a label to the marker for the team name and number of Facebook likes
+                       popup=paste(Stadium_data$Team[i]," : Number Facebook Likes ", Stadium_data$Fanbase[i]), 
+                       # Colour the marker by nfl conference
+                       color = Stadium_data$conferencecolour[i])
+}
+
+# Add a legend to the map for the conference coloured circles
+my_map <- addLegend(my_map,labels = c("AFC","NFC"), colors = c("blue","green"))
+
+# Display the Map!
+my_map
+```
+
