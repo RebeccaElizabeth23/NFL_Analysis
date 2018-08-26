@@ -39,7 +39,7 @@ knit_print.data.frame <- lemon_print
 ```
 
 ```{r data, echo=FALSE}
-Stadium_data <- read_sav("~/Documents/GitHub/NFL_Analysis/NFL_winsandlikes.sav")
+Stadium_data <- read_sav("~/Documents/GitHub/NFL_Analysis/TEAM- Wins and Likes/NFL_winsandlikes.sav")
 ```
 
 ```{r urls, echo=FALSE}

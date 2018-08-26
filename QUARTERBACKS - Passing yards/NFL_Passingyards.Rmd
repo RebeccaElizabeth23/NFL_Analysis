@@ -1,0 +1,231 @@
+---
+title: "NFL Quarterbacks: Who's worth their weight in passing yards?"
+author: "Rebecca Elizabeth Kitching"
+date: "26/08/2018"
+output:
+  ioslides_presentation:
+    logo: nfl.png
+    widescreen: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(lemon)
+library(plotly)
+knit_print.data.frame <- lemon_print
+```
+
+## NFL Analysis
+
+The weathers getting cooler and the leaves are beginning to turn - it can only mean the NFL season is coming around and time for a bit of preseason analysis. As anyone will be unsuprised to here, Quarterbacks are the highest paid NFL position with `r 100*(19/25)`% of the top NFL contracts, based on average yearly salary, belonging to those in the Quarterback position [1]. Indeed 2018 is lining up to be no different, with `r 100*(20/25)`% of the top NFL contracts still belonging to Quarterbacks [2]. 
+
+But are they worth it? And does a high salary ensure we see a Quarterback with high passing yards?
+
+Here I explore how the 2017 Quarterbacks stack up against each other and whether salary can predict passing yards.
+
+## Data
+```{r load packages, echo=FALSE}
+# Load the relevant packages
+library(XML)
+library(magrittr)
+library(ggplot2)
+```
+
+Data were obtained direct (via webscraping) from the official NFL website at NFL.com, where details on the game stats (Pass yards, Rushing yards, Fumbles, Touchdowns etc) can be found for each individual player. We'll be webscraping from the above site to gain the 2017 statistics from the 71 Quarterbacks who played in the 2017 Main Season (excluding Pre and Post season games). We also wanted to obtain Salary inforamtion (average salary) for each of the Quarterbacks which was manually entered from data supplied by Sportrac.com [3].
+
+```{r echo=FALSE}
+# Webscrape the Quarterback Passing stats from NFL.com
+website1 <- "http://www.nfl.com/stats/categorystats?tabSeq=1&statisticPositionCategory=QUARTERBACK&qualified=true&season=2017&seasonType=REG"
+qbtable1 = readHTMLTable(website1, header=F, which=1,stringsAsFactors=F) 
+
+website2 <- "http://www.nfl.com/stats/categorystats?tabSeq=1&season=2017&seasonType=REG&Submit=Go&experience=&archive=true&d-447263-p=2&conference=null&statisticPositionCategory=QUARTERBACK&qualified=true"
+qbtable2 = readHTMLTable(website2, header=F, which=1,stringsAsFactors=F) 
+
+quarterbacks = rbind(qbtable1,qbtable2)
+
+# Name the table columns
+colnames(quarterbacks) <- c("Rk","Player","Team","Pos","Comp","Att","Pct","AttperG","Yds",
+"Avg","YdsperG","TD","Int","1st","1st%","Lng","20+","40+","Sck","Rate")
+
+# LA Rams have difference acronyms on the Quarterback and Standings table
+quarterbacks$Team <- as.factor(gsub("LA$", "LAR",quarterbacks$Team))
+# Remove the comma from the yard variable and convert to numeric
+quarterbacks$Yds<- as.numeric(gsub(",", "", quarterbacks$Yds))
+quarterbacks$YdsperG <- as.numeric(quarterbacks$YdsperG)
+
+```
+
+
+
+
+```{r Salary, echo=FALSE}
+
+quarterbacks <- quarterbacks[order(quarterbacks$Player),] 
+quarterbacks$Salary <- as.numeric(c("22000000","600413","17000000","16000000",
+                                   "21850000","895000","5163703","625908",
+                                   "1480490","775000","708424","882162",
+                                   "20760000","24350000","6669085","2000000",
+                                   "3250000","847271","556667","680848",
+                                   "690000","2350000","25000000","3463570",
+                                   "1237104","24250000","3250000","800000",
+                                   "21000000","1200000","852708","495000",
+                                   "6337819","6984418","10000000","870975",
+                                   "495000","22133333","900000","6000000",
+                                   "1000000","495000","23943600","2200000",
+                                   "6053494","2625000","1775000","20750000",
+                                   "27000000","15000000","7258106","585000",
+                                   "659875","5500000","4106447","2369074",
+                                   "20812500","21900000","3000000","2000000",
+                                   "18000000","1750000","812724","775000",
+                                   "660000","1712376","20500000","630146",
+                                   "583196","962500","15250000"))
+quarterbacks$Salary <- quarterbacks$Salary/1000
+```
+## Data example
+
+```{r cars, echo = FALSE}
+head(quarterbacks[,c(2,3,9,11,21)],5)
+```
+
+## Salary vs Total Yards
+
+```{r plot, echo=FALSE, message=FALSE, fig.height=4, fig.align="center",fig.cap = "Figure 1: Linear regression between Salary and Total passing yards. R code found in Appendix"}
+fit <- lm(quarterbacks$Yds ~ quarterbacks$Salary)
+
+plot_ly() %>%
+  add_trace(data=quarterbacks, y=fitted(fit),hoverinfo="none", x=quarterbacks$Salary, mode='scatter') %>%
+  layout(xaxis = list(title = 'Average Year Salary (1000$)'),
+         yaxis = list(title = 'Total Yards'),
+         shapes =  list(
+           list(type = "rect",
+                    fillcolor = "green", 
+                    line = list(color = "green"), opacity = 0.3,
+                    x0 = 14600, x1 = 18900, xref = "x",
+                    y0 = 280, y1 = 1000, yref = "y"),
+           list(type = "rect",
+                    fillcolor = "red", 
+                    line = list(color = "red"), opacity = 0.3,
+                    x0 = 0, x1 = 8000, xref = "x",
+                    y0 = 2700, y1 = 4000, yref = "y"),
+            list(type = "rect",
+                    fillcolor = "pink", 
+                    line = list(color = "pink"), opacity = 0.3,
+                    x0 = 21000, x1 = 25000, xref = "x",
+                    y0 = 1500, y1 = 2100, yref = "y"))) %>%
+  add_markers(x= quarterbacks$Salary, quarterbacks$Yds, showlegend = FALSE, color = I("black"), text = ~paste(quarterbacks$Player), hoverinfo = 'text')
+```
+
+```{r player list, echo=FALSE}
+poorqb <- quarterbacks$Player[which(quarterbacks$Salary>=14000 & quarterbacks$Yds<=2100)]
+```
+
+## Salary vs Total Yards
+
+Here, we can of course see a strong positive relationsip between Average Salary and Total passing yards suggesting the most well payed quarterbacks are performing well, atleast in terms of passing. There do appear to be some quarterbacks that don't fit with this relationship however, as those highlighted on the previous graph show. On the next few slides we'll go through each of these 3 quarterback groups to understand the outperformers and weak links from the 2017 season.
+
+## Outperformers
+Those that are payed relativly low for a quarterback position , yet still show passing yards to rival the best of them (Red). 
+
+Despite some of these players already becoming household names, most are still fresh faced to the NFL with only a few years experience, and therefore remain on their first lower-salary contracts. Particually good value for the Phillidephia Eagles who, with 2nd year Carson Wentz's help, won Superbowl LII.
+
+##  Poor or Unlucky?
+ We now look at the other side of the coin to quarterbacks who, in 2017, were payed higher than average for their total passing yard performance.  
+ 
+**`r poorqb[1]`**: One of the most famous current NFL quarterbacks who unfortunatly didn't have a good year in 2017 with `r quarterbacks$Yds[which(quarterbacks$Player==poorqb[1])]` total passing yards - around average for the 2017 season but poor compared to fellow QB on a comparible salary. However, we can also see he gave us an above average passing yards per game of `r quarterbacks$YdsperG[which(quarterbacks$Player==poorqb[1])]` (Figure 2: Green area), suggesting a good but short overall season. Indeed, Rodgers had his season cut short through injury.  
+
+**`r poorqb[2]`**: Similar to Rodgers, Palmer is another great QB that unfortunatly shows a poor season due to injury, only played 7 games, and resulting in a relativly poor passing yards total of `r quarterbacks$Yds[which(quarterbacks$Player==poorqb[2])]`, yet shows a above-average passing yards per game of `r quarterbacks$YdsperG[which(quarterbacks$Player==poorqb[2])]` (Figure 2: Red area).   
+
+##  Poor or Unlucky?
+
+**`r poorqb[3]`**: Having just moved to the Chicago for the 2017 season, the Bears has high hopes for their new signing. Glennon only managed a 4 game season however, with `r quarterbacks$Yds[which(quarterbacks$Player==poorqb[3])]` total yards, putting him way under the overall season average and average for his salary. Despite such a poor performance, this average yards per game seems pretty spot on given his salary at `r quarterbacks$YdsperG[which(quarterbacks$Player==poorqb[3])]` yards per game (Figure 2: Pink area). Possibly if he'd been given more games, he'd manage to make it out of this danger zone. Despite this,and possible due to poor performance in other areas, he was released the following year.
+
+**`r poorqb[4]`**: Only playing 2 games this season, Bradford appears to be another unlucky quarterback with 
+`r quarterbacks$Yds[which(quarterbacks$Player==poorqb[4])]` total yards with an average of `r quarterbacks$YdsperG[which(quarterbacks$Player==poorqb[4])]` per game. However this was below his salary expectation on both accounts suggesting that, although he only played a short season, he didn't perform well in either game. (Figure 2: Blue area)
+
+## Salary vs Yards per game
+
+````{r fig2, fig.cap = "Figure 2: Linear regression between Salary and Passing yards per game. R code in Appendix", echo=FALSE}
+q <- ggplot(quarterbacks, aes(x=Salary, y=YdsperG))
+q + geom_point(stat = "identity")+ theme(axis.text.x = element_text(angle = 0, hjust = 1))+ xlab("Average Year Salary (1000$)") + ylab("Average Passing Yards (per game)") +
+  geom_smooth(method='lm', se=TRUE)+
+  geom_rect(aes(xmin = 21500,xmax = 22500,ymin = 232, ymax = 245),fill = 'green2',color = 'green',alpha = .002)+
+  geom_rect(aes(xmin = 24100,xmax = 24600,ymin = 278, ymax = 286),fill = 'red2',color = 'red',alpha = .002)+
+  geom_rect(aes(xmin = 14750,xmax = 15300,ymin = 200, ymax = 216),fill = 'maroon2',color = 'pink',alpha = .002)+
+  geom_rect(aes(xmin = 17750,xmax = 18250,ymin = 185, ymax = 200),fill = 'blue2',color = 'blue',alpha = .002)
+```
+
+## Summary
+
+Here we show a strong positive relationship between passing yards and salary, with higher payed players exhibiting more passing yards. Of course this could be due to higher payed players (who are often veterns) having more game-time to rack up the yards compared to rookies on lower salaries, however this relationship still exists when we examine Salary against yards per game.  
+Interestingly the analysis showed that, while Mike Glennon had a low overall Total passing yards, he dispayed a yards per game average that was average for the Quarterbacks of the 2017 season - despite this be was still benched early in the season and let go at the end of it.  
+We can also see a number of rising stars within the Rookie and Early career Quarterbacks including Jared Goff, Carson Wentz and Dak Prescott who have shown exceedingly high passing yards compared to what their salary predicts. 
+
+## Plot 1 - Code 1
+```{r plot code, echo=TRUE,message=FALSE, eval=FALSE, tidy=TRUE,tidy.opts=list(width.cutoff=60)}
+# Perform a linear regression
+fit <- lm(quarterbacks$Yds ~ quarterbacks$Salary)
+
+plot_ly() %>%
+  # Add the regression line
+  add_trace(data=quarterbacks, y=fitted(fit),hoverinfo="none",
+            x=quarterbacks$Salary, mode='scatter') %>%
+
+```
+
+## Plot 1 - Code 2
+```{r plot code2, echo=TRUE,message=FALSE, eval=FALSE}
+  # Add 3 rectangles to highlight those not fitting the regression
+  layout(xaxis = list(title = 'Average Year Salary (1000$)'),
+         yaxis = list(title = 'Total Yards'),
+         shapes =  list(
+           list(type = "rect",fillcolor = "green", 
+                    line = list(color = "green"), opacity = 0.3,
+                    x0 = 14600, x1 = 18900, xref = "x",
+                    y0 = 280, y1 = 1000, yref = "y"),
+           list(type = "rect",fillcolor = "red", 
+                    line = list(color = "red"), opacity = 0.3,
+                    x0 = 0, x1 = 8000, xref = "x",
+                    y0 = 2700, y1 = 4000, yref = "y"),
+            list(type = "rect",fillcolor = "pink", 
+                    line = list(color = "pink"), opacity = 0.3,
+                    x0 = 21000, x1 = 25000, xref = "x",
+                    y0 = 1500, y1 = 2100, yref = "y"))) %>%
+```
+
+## Plot 1 - Code 3
+```{r plot code3, echo=TRUE,message=FALSE, eval=FALSE}
+  # Add the markers as a scatter plot
+  add_markers(x= quarterbacks$Salary, 
+              y= quarterbacks$Yds, 
+              showlegend = FALSE, 
+              color = I("black"), 
+              text = ~paste(quarterbacks$Player), hoverinfo = 'text')
+```
+
+##Plot 2 - Code
+````{r fig2code, fig.cap = "Figure 2: Linear regression between Salary and Passing yards per game. R code in Appendix", eval=FALSE, echo=TRUE}
+q <- ggplot(quarterbacks, aes(x=Salary, y=YdsperG))
+q + geom_point(stat = "identity")+ 
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))+ 
+  xlab("Average Year Salary (1000$)") + 
+  ylab("Average Passing Yards (per game)") +
+  geom_smooth(method='lm', se=TRUE)+
+  geom_rect(aes(xmin = 21500,xmax = 22500,
+                ymin = 232, ymax = 245),fill = 'green2',color = 'green',alpha = .002)+
+  geom_rect(aes(xmin = 24100,xmax = 24600,
+                ymin = 278, ymax = 286),fill = 'red2',color = 'red',alpha = .002)+
+  geom_rect(aes(xmin = 14750,xmax = 15300,
+                ymin = 200, ymax = 216),fill = 'maroon2',color = 'pink',alpha = .002)+
+  geom_rect(aes(xmin = 17750,xmax = 18250,
+                ymin = 185, ymax = 200),fill = 'blue2',color = 'blue',alpha = .002)
+```
+
+##  References
+
+
+References  
+[Logo] http://www.stickpng.com/img/icons-logos-emojis/iconic-brands/nfl-logo  
+[1] http://www.nfl.com/photoessays/0ap3000000809063  
+[2] http://www.nfl.com/photoessays/0ap3000000915508  
+[3] https://www.spotrac.com/nfl/rankings/2017/average/quarterback/  
+[4] http://www.espn.co.uk/nfl/table/_/season/2017/group/league
