@@ -1,0 +1,2 @@
+# NFL Teams: Local, Likes and Wins
+This project examines the geographical location of each of the 32 NFL teams and explores differences in their number of Facebook Likes and the total number of Superbowl win. Trends revealed from the map are discussed.This project also makes use of the LEAFLET package in R which allows users to generate an interactive map.
