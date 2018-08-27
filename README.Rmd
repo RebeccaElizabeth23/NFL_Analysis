@@ -1,0 +1,12 @@
+# NFL Analysis README
+
+This reporistory contains projects based around American Football and the NFL. Here I try and use some of the vast ammount of data provided by the NFL to examine patterns and trends in the overall game, each team and for individual players and positions. All code for both data scraping, clearing, data analysis and visualization have been included to allow for reproducability and act as a 'How to' guide for those wanting to learn a bit more about R coding.
+
+Such analysis has all been coded using R and presented using R Markdown.
+
+ ## NFL Teams: Local, Likes and Wins
+ This project examines the geographical location of each of the 32 NFL teams and explores differences in their number of Facebook Likes and the total number of Superbowl win. Trends revealed from the map are discussed.This project also makes use of the LEAFLET package in R which allows users to generate an interactive map. 
+ 
+ 
+  ## NFL Quarterbacks: Who's worth their weight in passing yards?
+  This project uses linear modelling and regression to look at the link between game passing yards and average yearly salary for each f the 71 Quarterbacks in the 2017 main NFL season. Using this data, we can see which Quarterbacks have been a great deal for their club and which were given a large salary but failed to perform. This project makes use of both GGPLOT2 and PLOTLY R plotting packages to visualise the data discussed and is presetned using a Powerpoint feature of R Markdown and Knitr.
